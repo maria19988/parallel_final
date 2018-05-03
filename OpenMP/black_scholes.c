@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <omp.h>
 
-
 /**
  * This function is what you compute for each iteration of
  * Black-Scholes.  You don't have to understand it; just call it.
@@ -40,18 +39,18 @@ black_scholes_stddev (void* the_args)
 {
   black_scholes_args_t* args = (black_scholes_args_t*) the_args;
   const double mean = args->mean;
-  const int M = args->M;
+  const int M = args->M/omp_get_num_threads();
   double variance = 0.0;
   int k;
-  
-  #pragma omp parallel for private(variance)
-  for (k = 0; k < M; k++)
+
+  #pragma omp parallel for reduction (+:variance)
+    for (k = 0; k < M; k++)
     {
       const double diff = args->trials[k] - mean;
       /*
-       * Just like when computing the mean, we scale each term of this
-       * sum in order to avoid overflow.
-       */
+      * Just like when computing the mean, we scale each term of this
+      * sum in order to avoid overflow.
+      */
       variance += diff * diff / (double) M;
     }
 
@@ -97,26 +96,25 @@ black_scholes_iterate (void* the_args)
   init_gaussrand_state (&gaussrand_state);
   
   /* Do the Black-Scholes iterations */
-  #pragma omp parallel for private(mean)
+  //
+
+  double *random; 
+  random = malloc(M*sizeof(double));
+
+  for(k = 0; k<M; k++) {
+    const double gaussian_random_number = gaussrand1 (&uniform_random_double, prng_stream, &gaussrand_state);
+    random[k] = gaussian_random_number;
+  }
+
+  #pragma omp for reduction(+:mean)
   for (k = 0; k < M; k++)
     {
-      const double gaussian_random_number = gaussrand1 (&uniform_random_double,
-							prng_stream,
-							&gaussrand_state);
-      trials[k] = black_scholes_value (S, E, r, sigma, T, 
-				       gaussian_random_number);
-
-      /*
-       * We scale each term of the sum in order to avoid overflow. 
-       * This ensures that mean is never larger than the max
-       * element of trials[0 .. M-1].
-       */
+      trials[k] = black_scholes_value (S, E, r, sigma, T, random[k]);
       mean += trials[k] / (double) M;
     }
 
   /* Pack the OUT values into the args struct */
   args->mean = mean;
-
   /* 
    * We do the standard deviation computation as a second operation.
    */

@@ -13,8 +13,7 @@
  *
  * <filename> (don't include the angle brackets) is the name of 
  * a data file in the current directory containing the parameters
- * 
- the Black-Scholes simulation.  It has exactly six lines 
+ * for the Black-Scholes simulation.  It has exactly six lines 
  * with no white space.  Put each parameter one to a line, with
  * an endline after it.  Here are the parameters:
  *
@@ -35,7 +34,7 @@ main (int argc, char* argv[])
 {
   confidence_interval_t interval;
   double S, E, r, sigma, T;
-  int M = 0;
+  int M = 0, m = 0;
   char* filename = NULL;
   int nthreads = 1;
   double t1, t2;
@@ -48,23 +47,21 @@ main (int argc, char* argv[])
     }
   filename = argv[1];
   nthreads = to_int (argv[2]);
-  parse_parameters (&S, &E, &r, &sigma, &T, &M, filename);
 
-  /* 
-   * Make sure init_timer() is only called by one thread,
-   * before all the other threads run!
-   */
+  omp_set_num_threads(nthreads);
+  parse_parameters (&S, &E, &r, &sigma, &T, &M, filename);
+  
   init_timer ();
 
-  /* Same goes for initializing the PRNG */
-  init_prng (random_seed ());
+    /* Same goes for initializing the PRNG */
+      init_prng (random_seed ());
 
-  /*
-   * Run the benchmark and time it.
-   */
-  t1 = get_seconds ();
-  black_scholes (&interval, S, E, r, sigma, T, M);
-  t2 = get_seconds ();
+    /*
+    * Run the benchmark and time it.
+    */
+    t1 = get_seconds ();
+    black_scholes (&interval, S, E, r, sigma, T, M);
+    t2 = get_seconds ();
 
   /*
    * A fun fact about C string literals (i.e., strings enclosed in

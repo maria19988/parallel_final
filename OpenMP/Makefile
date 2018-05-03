@@ -19,10 +19,10 @@ HW1_EXE = csc447.x
 all: csc447.x
 
 %.o: %.c
-	$(CC) -c  $(CPPFLAGS) $< $(CFLAGS) -o $@
+	$(CC) -c $(CPPFLAGS) $< $(CFLAGS) -o $@ $(LDFLAGS)
 
 csc447.x: $(HW1_C_OBJS) dcmt0.4/lib/libdcmt.a
-	$(LINKER) $(CFLAGS)  $(HW1_C_OBJS) -o $@ $(LDFLAGS)
+	$(LINKER) $(CFLAGS) $(HW1_C_OBJS) -o $@ $(LDFLAGS)
 
 dcmt0.4/lib/libdcmt.a: 
 	make -C dcmt0.4/lib
